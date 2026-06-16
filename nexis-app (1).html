@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEXIS AI — App</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+:root{--neon:#00ffe7;--neon2:#ff2d78;--neon3:#a259ff;--dark:#050810;--dark2:#0a0f1e;--dark3:#0d1530;--glass:rgba(0,255,231,0.06);--glass2:rgba(162,89,255,0.08);--border:rgba(0,255,231,0.18);--text:#e0f7fa;--muted:#5a7a8a;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--dark);color:var(--text);font-family:'Rajdhani',sans-serif;min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,255,231,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,255,231,0.025) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
+.orb{position:fixed;border-radius:50%;filter:blur(80px);pointer-events:none;z-index:0;animation:orbFloat 8s ease-in-out infinite;}
+.orb1{width:400px;height:400px;background:rgba(0,255,231,0.06);top:-100px;left:-100px;}
+.orb2{width:350px;height:350px;background:rgba(162,89,255,0.07);bottom:-100px;right:-100px;animation-delay:-4s;}
+@keyframes orbFloat{0%,100%{transform:translate(0,0);}50%{transform:translate(30px,-30px);}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:0.3;}}
+@keyframes pulse{0%,100%{box-shadow:0 0 20px rgba(0,255,231,0.3);}50%{box-shadow:0 0 40px rgba(0,255,231,0.6);}}
+@keyframes spin{to{transform:rotate(360deg);}}
+@keyframes msgIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+@keyframes typingAnim{0%,100%{opacity:0.3;transform:scale(0.8);}50%{opacity:1;transform:scale(1);}}
+
+/* AUTH SCREEN */
+#authScreen{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;padding:24px;background:var(--dark);}
+.auth-box{background:var(--dark2);border:1px solid var(--border);border-radius:24px;padding:48px 40px;max-width:440px;width:100%;animation:fadeUp 0.6s ease;}
+.auth-logo{text-align:center;margin-bottom:32px;}
+.auth-logo-icon{width:64px;height:64px;border:2px solid var(--neon);border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;animation:pulse 2s ease-in-out infinite;box-shadow:0 0 20px rgba(0,255,231,0.3);}
+.auth-logo-text{font-family:'Orbitron',monospace;font-size:28px;font-weight:900;letter-spacing:4px;background:linear-gradient(90deg,var(--neon),var(--neon3));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.auth-logo-sub{font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:3px;color:var(--muted);margin-top:4px;}
+.auth-tabs{display:flex;gap:0;margin-bottom:32px;background:rgba(0,0,0,0.3);border-radius:10px;padding:4px;}
+.auth-tab{flex:1;padding:10px;text-align:center;font-family:'Orbitron',monospace;font-size:11px;font-weight:700;letter-spacing:2px;color:var(--muted);cursor:pointer;border-radius:8px;transition:all 0.3s;border:none;background:transparent;}
+.auth-tab.active{background:var(--glass);color:var(--neon);border:1px solid var(--border);}
+.auth-form{display:flex;flex-direction:column;gap:16px;}
+.field-label{font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--muted);margin-bottom:6px;}
+.field-input{width:100%;background:rgba(0,0,0,0.4);border:1px solid var(--border);border-radius:10px;padding:14px 16px;color:var(--text);font-family:'Rajdhani',sans-serif;font-size:16px;outline:none;transition:border-color 0.3s;}
+.field-input:focus{border-color:var(--neon);box-shadow:0 0 20px rgba(0,255,231,0.1);}
+.field-input::placeholder{color:var(--muted);}
+.auth-submit{width:100%;background:linear-gradient(135deg,var(--neon),var(--neon3));border:none;border-radius:10px;padding:16px;font-family:'Orbitron',monospace;font-size:13px;font-weight:700;letter-spacing:2px;color:var(--dark);cursor:pointer;transition:all 0.3s;box-shadow:0 0 30px rgba(0,255,231,0.3);margin-top:8px;}
+.auth-submit:hover{transform:translateY(-2px);box-shadow:0 0 50px rgba(0,255,231,0.5);}
+.auth-error{background:rgba(255,45,120,0.1);border:1px solid rgba(255,45,120,0.3);border-radius:8px;padding:12px 16px;font-size:13px;color:#ff6b9d;display:none;}
+.auth-divider{text-align:center;color:var(--muted);font-size:12px;font-family:'Share Tech Mono',monospace;letter-spacing:2px;margin:8px 0;}
+
+/* MAIN APP */
+#appScreen{display:none;flex-direction:column;min-height:100vh;position:relative;z-index:5;}
+
+/* HEADER */
+header{position:sticky;top:0;z-index:50;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;background:rgba(5,8,16,0.9);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);}
+.logo{display:flex;align-items:center;gap:10px;cursor:pointer;}
+.logo-icon{width:40px;height:40px;border:2px solid var(--neon);border-radius:8px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 20px rgba(0,255,231,0.3);animation:pulse 2s ease-in-out infinite;}
+.logo-text{font-family:'Orbitron',monospace;font-size:18px;font-weight:900;letter-spacing:3px;background:linear-gradient(90deg,var(--neon),var(--neon3));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.header-right{display:flex;align-items:center;gap:12px;}
+.power-badge{background:var(--glass);border:1px solid var(--border);border-radius:8px;padding:7px 14px;font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--neon);display:flex;align-items:center;gap:6px;}
+.power-dot{width:6px;height:6px;border-radius:50%;background:var(--neon);box-shadow:0 0 6px var(--neon);animation:blink 1s infinite;}
+.user-menu{position:relative;}
+.user-btn{background:var(--glass2);border:1px solid rgba(162,89,255,0.3);border-radius:8px;padding:7px 14px;font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--neon3);cursor:pointer;display:flex;align-items:center;gap:8px;transition:all 0.3s;}
+.user-btn:hover{border-color:var(--neon3);background:rgba(162,89,255,0.12);}
+.user-dropdown{position:absolute;top:calc(100% + 8px);right:0;background:var(--dark2);border:1px solid var(--border);border-radius:12px;padding:8px;min-width:180px;display:none;z-index:100;animation:fadeUp 0.2s ease;}
+.user-dropdown.open{display:block;}
+.dropdown-item{padding:10px 14px;font-size:14px;color:var(--muted);cursor:pointer;border-radius:8px;transition:all 0.2s;display:flex;align-items:center;gap:10px;}
+.dropdown-item:hover{background:var(--glass);color:var(--text);}
+.dropdown-item.danger:hover{background:rgba(255,45,120,0.1);color:var(--neon2);}
+.dropdown-divider{height:1px;background:var(--border);margin:6px 0;}
+.btn-upgrade{background:linear-gradient(135deg,var(--neon2),var(--neon3));border:none;border-radius:8px;padding:8px 16px;font-family:'Orbitron',monospace;font-size:10px;font-weight:700;letter-spacing:2px;color:#fff;cursor:pointer;transition:all 0.3s;box-shadow:0 0 15px rgba(255,45,120,0.3);}
+.btn-upgrade:hover{transform:translateY(-1px);box-shadow:0 0 30px rgba(255,45,120,0.5);}
+
+/* LAYOUT */
+.app-body{display:flex;flex:1;overflow:hidden;height:calc(100vh - 65px);}
+
+/* SIDEBAR */
+.sidebar{width:260px;border-right:1px solid var(--border);display:flex;flex-direction:column;background:rgba(0,0,0,0.2);flex-shrink:0;overflow-y:auto;}
+.sidebar-section{padding:20px 16px 12px;border-bottom:1px solid var(--border);}
+.sidebar-label{font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:3px;color:var(--muted);margin-bottom:12px;}
+.user-profile{display:flex;align-items:center;gap:12px;padding:12px;background:var(--glass);border:1px solid var(--border);border-radius:10px;}
+.user-avatar{width:40px;height:40px;border-radius:8px;background:linear-gradient(135deg,rgba(0,255,231,0.2),rgba(162,89,255,0.2));border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-family:'Orbitron',monospace;font-size:14px;font-weight:900;color:var(--neon);flex-shrink:0;}
+.user-info-name{font-family:'Orbitron',monospace;font-size:12px;font-weight:700;color:var(--text);letter-spacing:1px;}
+.user-info-plan{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--muted);margin-top:2px;}
+.rank-section{padding:16px;}
+.rank-label{font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:3px;color:var(--muted);margin-bottom:8px;}
+.rank-display{font-family:'Orbitron',monospace;font-size:22px;font-weight:900;color:var(--neon);margin-bottom:8px;}
+.rank-bar-bg{height:6px;background:rgba(255,255,255,0.05);border-radius:3px;overflow:hidden;margin-bottom:6px;}
+.rank-bar-fill{height:100%;background:linear-gradient(90deg,var(--neon),var(--neon3));border-radius:3px;transition:width 0.5s ease;box-shadow:0 0 8px var(--neon);}
+.rank-next{font-size:11px;color:var(--muted);}
+.amp-section{padding:16px;}
+.amp-buttons{display:flex;flex-direction:column;gap:6px;}
+.amp-option{padding:10px 14px;background:var(--glass);border:1px solid var(--border);border-radius:8px;font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--muted);cursor:pointer;transition:all 0.3s;display:flex;justify-content:space-between;align-items:center;}
+.amp-option:hover,.amp-option.active{background:rgba(0,255,231,0.1);border-color:var(--neon);color:var(--neon);}
+.amp-option .amp-tag{font-size:9px;background:rgba(0,255,231,0.1);border-radius:4px;padding:2px 6px;}
+.sidebar-stats{padding:16px;border-top:1px solid var(--border);margin-top:auto;}
+.mini-stat{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.04);}
+.mini-stat:last-child{border:none;}
+.mini-stat-lbl{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--muted);}
+.mini-stat-val{font-family:'Orbitron',monospace;font-size:12px;font-weight:700;color:var(--neon);}
+
+/* CHAT */
+.chat-area{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.chat-header{padding:14px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:rgba(0,0,0,0.1);flex-shrink:0;}
+.chat-title{font-family:'Orbitron',monospace;font-size:11px;letter-spacing:3px;color:var(--neon);}
+.chat-meta{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--muted);}
+.messages{flex:1;overflow-y:auto;padding:24px;display:flex;flex-direction:column;gap:16px;}
+.messages::-webkit-scrollbar{width:3px;}
+.messages::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+.msg{display:flex;gap:12px;animation:msgIn 0.3s ease;}
+.msg.user{flex-direction:row-reverse;}
+.msg-av{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:'Orbitron',monospace;font-size:10px;font-weight:900;flex-shrink:0;}
+.msg-av.nexis-av{background:linear-gradient(135deg,rgba(0,255,231,0.15),rgba(162,89,255,0.15));border:1px solid var(--border);color:var(--neon);}
+.msg-av.user-av{background:linear-gradient(135deg,rgba(255,45,120,0.15),rgba(162,89,255,0.15));border:1px solid rgba(162,89,255,0.3);color:var(--neon3);}
+.msg-bubble{background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:14px 18px;max-width:72%;font-size:15px;line-height:1.7;font-weight:400;}
+.msg.user .msg-bubble{background:rgba(162,89,255,0.1);border-color:rgba(162,89,255,0.25);}
+.msg-bubble strong{color:var(--neon);}
+.msg-bubble code{font-family:'Share Tech Mono',monospace;background:rgba(0,0,0,0.4);border-radius:4px;padding:2px 6px;font-size:13px;color:var(--neon3);}
+.typing{display:flex;align-items:center;gap:5px;padding:14px 18px;}
+.typing-dot{width:6px;height:6px;border-radius:50%;background:var(--neon);animation:typingAnim 1.2s ease-in-out infinite;}
+.typing-dot:nth-child(2){animation-delay:0.2s;}
+.typing-dot:nth-child(3){animation-delay:0.4s;}
+.input-zone{padding:16px 24px;border-top:1px solid var(--border);background:rgba(0,0,0,0.2);flex-shrink:0;}
+.quick-row{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
+.quick-chip{background:var(--glass);border:1px solid var(--border);border-radius:50px;padding:6px 14px;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;transition:all 0.2s;white-space:nowrap;}
+.quick-chip:hover{color:var(--neon);border-color:var(--neon);}
+.input-row{display:flex;gap:12px;align-items:flex-end;}
+.input-wrap{flex:1;background:rgba(0,0,0,0.3);border:1px solid var(--border);border-radius:12px;padding:14px 18px;transition:border-color 0.3s;}
+.input-wrap:focus-within{border-color:var(--neon);box-shadow:0 0 20px rgba(0,255,231,0.08);}
+#userInput{width:100%;background:transparent;border:none;outline:none;color:var(--text);font-family:'Rajdhani',sans-serif;font-size:16px;resize:none;max-height:120px;}
+#userInput::placeholder{color:var(--muted);}
+.send-btn{width:48px;height:48px;background:linear-gradient(135deg,var(--neon),var(--neon3));border:none;border-radius:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.3s;flex-shrink:0;}
+.send-btn:hover{transform:translateY(-2px);box-shadow:0 0 30px rgba(0,255,231,0.4);}
+.send-btn:disabled{opacity:0.4;cursor:not-allowed;transform:none;}
+
+/* PAYMENT MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.85);backdrop-filter:blur(10px);z-index:300;display:none;align-items:center;justify-content:center;padding:24px;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--dark2);border:1px solid var(--border);border-radius:20px;padding:40px;max-width:500px;width:100%;position:relative;animation:fadeUp 0.3s ease;}
+.modal-close{position:absolute;top:16px;right:16px;background:transparent;border:1px solid var(--border);border-radius:6px;width:32px;height:32px;color:var(--muted);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.3s;}
+.modal-close:hover{color:var(--neon);border-color:var(--neon);}
+.modal h2{font-family:'Orbitron',monospace;font-size:22px;font-weight:900;background:linear-gradient(135deg,var(--neon),var(--neon3));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px;}
+.modal p{color:var(--muted);font-size:14px;margin-bottom:28px;line-height:1.6;}
+.plan-cards{display:flex;flex-direction:column;gap:10px;margin-bottom:24px;}
+.plan-card{background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:all 0.3s;}
+.plan-card:hover,.plan-card.selected{border-color:var(--neon);background:rgba(0,255,231,0.08);}
+.plan-name{font-family:'Orbitron',monospace;font-size:12px;font-weight:700;color:var(--text);letter-spacing:1px;}
+.plan-desc{font-size:12px;color:var(--muted);margin-top:2px;}
+.plan-price{font-family:'Orbitron',monospace;font-size:20px;font-weight:900;color:var(--neon);}
+.plan-price span{font-size:11px;color:var(--muted);font-weight:400;}
+.stripe-btn{width:100%;background:linear-gradient(135deg,#635bff,#a259ff);border:none;border-radius:12px;padding:16px;font-family:'Orbitron',monospace;font-size:13px;font-weight:700;letter-spacing:2px;color:#fff;cursor:pointer;transition:all 0.3s;}
+.stripe-btn:hover{transform:translateY(-2px);box-shadow:0 0 40px rgba(99,91,255,0.5);}
+.stripe-note{text-align:center;font-size:11px;color:var(--muted);margin-top:10px;font-family:'Share Tech Mono',monospace;}
+
+/* ACCOUNT MODAL */
+.account-modal{max-width:460px;}
+.account-section{margin-bottom:24px;}
+.account-label{font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--muted);margin-bottom:10px;}
+.account-field{background:rgba(0,0,0,0.3);border:1px solid var(--border);border-radius:10px;padding:12px 16px;font-size:14px;color:var(--text);}
+.account-stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.account-stat{background:var(--glass);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center;}
+.account-stat-val{font-family:'Orbitron',monospace;font-size:22px;font-weight:900;color:var(--neon);}
+.account-stat-lbl{font-size:11px;color:var(--muted);font-family:'Share Tech Mono',monospace;margin-top:2px;}
+.danger-btn{width:100%;background:rgba(255,45,120,0.1);border:1px solid rgba(255,45,120,0.3);border-radius:10px;padding:12px;font-family:'Orbitron',monospace;font-size:11px;font-weight:700;letter-spacing:2px;color:var(--neon2);cursor:pointer;transition:all 0.3s;margin-top:8px;}
+.danger-btn:hover{background:rgba(255,45,120,0.2);border-color:var(--neon2);}
+
+@media(max-width:768px){
+  .sidebar{display:none;}
+  .app-body{flex-direction:column;}
+  .chat-area{height:calc(100vh - 65px);}
+  header{padding:12px 16px;}
+}
+</style>
+</head>
+<body>
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
+
+<!-- ===== AUTH SCREEN ===== -->
+<div id="authScreen">
+  <div class="auth-box">
+    <div class="auth-logo">
+      <div class="auth-logo-icon">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#00ffe7" stroke-width="2"><polygon points="12,2 22,8.5 22,15.5 12,22 2,15.5 2,8.5"/><line x1="12" y1="2" x2="12" y2="22"/><line x1="2" y1="8.5" x2="22" y2="8.5"/><line x1="2" y1="15.5" x2="22" y2="15.5"/></svg>
+      </div>
+      <div class="auth-logo-text">NEXIS AI</div>
+      <div class="auth-logo-sub">AMPLIFIED INTELLIGENCE</div>
+    </div>
+
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchTab('login')">LOGIN</button>
+      <button class="auth-tab" onclick="switchTab('signup')">CREATE ACCOUNT</button>
+    </div>
+
+    <div class="auth-error" id="authError"></div>
+
+    <!-- LOGIN -->
+    <div id="loginForm" class="auth-form">
+      <div>
+        <div class="field-label">EMAIL ADDRESS</div>
+        <input class="field-input" type="email" id="loginEmail" placeholder="you@example.com" autocomplete="email">
+      </div>
+      <div>
+        <div class="field-label">PASSWORD</div>
+        <input class="field-input" type="password" id="loginPass" placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <button class="auth-submit" onclick="handleLogin()">⚡ ENTER NEXIS</button>
+      <div class="auth-divider">— or continue as guest —</div>
+      <button class="auth-submit" style="background:var(--glass);color:var(--text);border:1px solid var(--border);box-shadow:none;" onclick="guestLogin()">GUEST ACCESS</button>
+    </div>
+
+    <!-- SIGNUP -->
+    <div id="signupForm" class="auth-form" style="display:none;">
+      <div>
+        <div class="field-label">DISPLAY NAME</div>
+        <input class="field-input" type="text" id="signupName" placeholder="Your name or handle" autocomplete="name">
+      </div>
+      <div>
+        <div class="field-label">EMAIL ADDRESS</div>
+        <input class="field-input" type="email" id="signupEmail" placeholder="you@example.com" autocomplete="email">
+      </div>
+      <div>
+        <div class="field-label">PASSWORD</div>
+        <input class="field-input" type="password" id="signupPass" placeholder="Min 6 characters" autocomplete="new-password">
+      </div>
+      <button class="auth-submit" onclick="handleSignup()">🚀 CREATE ACCOUNT</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== PAYMENT MODAL ===== -->
+<div class="modal-overlay" id="payModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('payModal')">✕</button>
+    <h2>NEXIS PRO ACCESS</h2>
+    <p>Unlock unlimited amplification, priority processing, and maximum power. Your subscription supports the creator directly.</p>
+    <div class="plan-cards">
+      <div class="plan-card selected" onclick="selectPlan(this,'core')">
+        <div><div class="plan-name">NEXIS CORE</div><div class="plan-desc">50 queries/day · Power up to ×10</div></div>
+        <div class="plan-price">$9<span>/mo</span></div>
+      </div>
+      <div class="plan-card" onclick="selectPlan(this,'pro')">
+        <div><div class="plan-name">NEXIS PRO</div><div class="plan-desc">Unlimited · Power up to ×100</div></div>
+        <div class="plan-price">$29<span>/mo</span></div>
+      </div>
+      <div class="plan-card" onclick="selectPlan(this,'elite')">
+        <div><div class="plan-name">NEXIS ELITE</div><div class="plan-desc">Unlimited · MAX POWER · API Access</div></div>
+        <div class="plan-price">$99<span>/mo</span></div>
+      </div>
+    </div>
+    <button class="stripe-btn" onclick="goToStripe()">⚡ SUBSCRIBE WITH STRIPE</button>
+    <div class="stripe-note">🔒 Secured by Stripe · Cancel anytime · Instant activation</div>
+  </div>
+</div>
+
+<!-- ===== ACCOUNT MODAL ===== -->
+<div class="modal-overlay" id="accountModal">
+  <div class="modal account-modal">
+    <button class="modal-close" onclick="closeModal('accountModal')">✕</button>
+    <h2>MY ACCOUNT</h2>
+    <p>Manage your NEXIS profile and subscription.</p>
+    <div class="account-section">
+      <div class="account-label">PROFILE</div>
+      <div class="account-field" id="accountName">—</div>
+      <div class="account-field" style="margin-top:8px;" id="accountEmail">—</div>
+    </div>
+    <div class="account-section">
+      <div class="account-label">YOUR STATS</div>
+      <div class="account-stat-grid">
+        <div class="account-stat"><div class="account-stat-val" id="acStatQ">0</div><div class="account-stat-lbl">QUERIES</div></div>
+        <div class="account-stat"><div class="account-stat-val" id="acStatP">FREE</div><div class="account-stat-lbl">PLAN</div></div>
+        <div class="account-stat"><div class="account-stat-val" id="acStatR">LVL 1</div><div class="account-stat-lbl">RANK</div></div>
+        <div class="account-stat"><div class="account-stat-val" id="acStatT">0</div><div class="account-stat-lbl">TOKENS</div></div>
+      </div>
+    </div>
+    <div class="account-section">
+      <div class="account-label">SUBSCRIPTION</div>
+      <button class="stripe-btn" onclick="closeModal('accountModal');openModal('payModal')">⚡ UPGRADE PLAN</button>
+      <button class="danger-btn" onclick="handleLogout()">LOG OUT</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== APP SCREEN ===== -->
+<div id="appScreen">
+  <header>
+    <div class="logo" onclick="window.location.href='nexis-landing.html'">
+      <div class="logo-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#00ffe7" stroke-width="2"><polygon points="12,2 22,8.5 22,15.5 12,22 2,15.5 2,8.5"/><line x1="12" y1="2" x2="12" y2="22"/><line x1="2" y1="8.5" x2="22" y2="8.5"/><line x1="2" y1="15.5" x2="22" y2="15.5"/></svg>
+      </div>
+      <div class="logo-text">NEXIS AI</div>
+    </div>
+    <div class="header-right">
+      <div class="power-badge"><div class="power-dot"></div>PWR: <span id="hdrPwr" style="color:var(--neon);font-weight:bold;margin-left:4px;">×1</span></div>
+      <button class="btn-upgrade" onclick="openModal('payModal')">⚡ UPGRADE</button>
+      <div class="user-menu">
+        <button class="user-btn" onclick="toggleDropdown()" id="userBtn">
+          <span id="userInitial">?</span>
+          <span id="userNameShort">USER</span>
+          <span>▾</span>
+        </button>
+        <div class="user-dropdown" id="userDropdown">
+          <div class="dropdown-item" onclick="openAccountModal()">👤 My Account</div>
+          <div class="dropdown-item" onclick="openModal('payModal')">⚡ Upgrade Plan</div>
+          <div class="dropdown-divider"></div>
+          <div class="dropdown-item danger" onclick="handleLogout()">🚪 Log Out</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="app-body">
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-label">// PROFILE</div>
+        <div class="user-profile">
+          <div class="user-avatar" id="sidebarAvatar">?</div>
+          <div>
+            <div class="user-info-name" id="sidebarName">USER</div>
+            <div class="user-info-plan" id="sidebarPlan">FREE PLAN</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="rank-section">
+        <div class="rank-label">// NEXIS RANK</div>
+        <div class="rank-display" id="rankDisplay">LVL 1</div>
+        <div class="rank-bar-bg"><div class="rank-bar-fill" id="rankFill" style="width:5%"></div></div>
+        <div class="rank-next" id="rankNext">3 queries to next level</div>
+      </div>
+
+      <div class="amp-section">
+        <div class="sidebar-label">// AMPLIFICATION</div>
+        <div class="amp-buttons">
+          <div class="amp-option active" onclick="setAmp(1,this)"><span>STANDARD</span><span class="amp-tag">×1</span></div>
+          <div class="amp-option" onclick="setAmp(5,this)"><span>AMPLIFIED</span><span class="amp-tag">×5</span></div>
+          <div class="amp-option" onclick="setAmp(10,this)"><span>BOOSTED</span><span class="amp-tag">×10</span></div>
+          <div class="amp-option" onclick="setAmp(25,this)"><span>NEXIS MODE</span><span class="amp-tag">×25</span></div>
+          <div class="amp-option" onclick="setAmp(100,this)"><span>MAX POWER ⚡</span><span class="amp-tag">×100</span></div>
+        </div>
+      </div>
+
+      <div class="sidebar-stats">
+        <div class="sidebar-label">// SESSION</div>
+        <div class="mini-stat"><span class="mini-stat-lbl">QUERIES</span><span class="mini-stat-val" id="statQ">0</span></div>
+        <div class="mini-stat"><span class="mini-stat-lbl">TOKENS</span><span class="mini-stat-val" id="statTok">0</span></div>
+        <div class="mini-stat"><span class="mini-stat-lbl">SESSION</span><span class="mini-stat-val" id="statTime">00:00</span></div>
+        <div class="mini-stat"><span class="mini-stat-lbl">MODE</span><span class="mini-stat-val" id="statMode">STD</span></div>
+      </div>
+    </div>
+
+    <!-- CHAT -->
+    <div class="chat-area">
+      <div class="chat-header">
+        <div class="chat-title">NEXIS INTELLIGENCE INTERFACE</div>
+        <div class="chat-meta" id="chatMeta">STANDARD MODE · ×1 POWER</div>
+      </div>
+      <div class="messages" id="messages"></div>
+      <div class="input-zone">
+        <div class="quick-row">
+          <div class="quick-chip" onclick="quick('Explain this to me like I am 5 years old: ')">👶 Simplify</div>
+          <div class="quick-chip" onclick="quick('Give me 10 ways to make money online today')">💰 Make Money</div>
+          <div class="quick-chip" onclick="quick('What are the best AI tools right now and how do I use them?')">🤖 AI Tools</div>
+          <div class="quick-chip" onclick="quick('Help me write a business plan for: ')">📋 Business Plan</div>
+          <div class="quick-chip" onclick="quick('Teach me something that will blow my mind')">🤯 Mind Blown</div>
+          <div class="quick-chip" onclick="quick('What investing secrets do most people not know?')">📈 Investing</div>
+        </div>
+        <div class="input-row">
+          <div class="input-wrap">
+            <textarea id="userInput" placeholder="Ask NEXIS anything..." rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+          </div>
+          <button class="send-btn" id="sendBtn" onclick="send()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22,2 15,22 11,13 2,9"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// SIMPLE LOCAL AUTH (no backend needed — stores in localStorage)
+// ============================================================
+let currentUser = null;
+let ampLevel = 1;
+let queryCount = 0;
+let totalTokens = 0;
+let sessionStart = Date.now();
+let convoHistory = [];
+let selectedPlan = 'core';
+
+const STRIPE_LINKS = {
+  core:  'https://buy.stripe.com/YOUR_CORE_LINK',
+  pro:   'https://buy.stripe.com/YOUR_PRO_LINK',
+  elite: 'https://buy.stripe.com/YOUR_ELITE_LINK'
+};
+
+// --- AUTH HELPERS ---
+function getUsers() { return JSON.parse(localStorage.getItem('nexis_users') || '{}'); }
+function saveUsers(u) { localStorage.setItem('nexis_users', JSON.stringify(u)); }
+function saveSession(u) { localStorage.setItem('nexis_session', JSON.stringify(u)); }
+function loadSession() { return JSON.parse(localStorage.getItem('nexis_session') || 'null'); }
+function clearSession() { localStorage.removeItem('nexis_session'); }
+
+function showError(msg) {
+  const el = document.getElementById('authError');
+  el.textContent = msg;
+  el.style.display = 'block';
+  setTimeout(() => el.style.display = 'none', 4000);
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.auth-tab').forEach((t,i) => t.classList.toggle('active', (tab==='login'&&i===0)||(tab==='signup'&&i===1)));
+  document.getElementById('loginForm').style.display = tab==='login' ? 'flex' : 'none';
+  document.getElementById('signupForm').style.display = tab==='signup' ? 'flex' : 'none';
+  document.getElementById('authError').style.display = 'none';
+}
+
+function handleSignup() {
+  const name = document.getElementById('signupName').value.trim();
+  const email = document.getElementById('signupEmail').value.trim().toLowerCase();
+  const pass = document.getElementById('signupPass').value;
+  if(!name) return showError('Enter your name.');
+  if(!email || !email.includes('@')) return showError('Enter a valid email.');
+  if(pass.length < 6) return showError('Password must be at least 6 characters.');
+  const users = getUsers();
+  if(users[email]) return showError('Account already exists. Log in instead.');
+  const user = { name, email, pass, plan:'free', queries:0, tokens:0, joined: Date.now() };
+  users[email] = user;
+  saveUsers(users);
+  saveSession(user);
+  bootApp(user);
+}
+
+function handleLogin() {
+  const email = document.getElementById('loginEmail').value.trim().toLowerCase();
+  const pass = document.getElementById('loginPass').value;
+  if(!email || !pass) return showError('Enter email and password.');
+  const users = getUsers();
+  const user = users[email];
+  if(!user) return showError('No account found. Create one first.');
+  if(user.pass !== pass) return showError('Wrong password.');
+  saveSession(user);
+  bootApp(user);
+}
+
+function guestLogin() {
+  const user = { name:'Guest', email:'guest@nexis.ai', plan:'free', queries:0, tokens:0, guest:true };
+  bootApp(user);
+}
+
+function handleLogout() {
+  clearSession();
+  currentUser = null;
+  convoHistory = [];
+  document.getElementById('appScreen').style.display = 'none';
+  document.getElementById('authScreen').style.display = 'flex';
+  closeModal('accountModal');
+}
+
+// --- BOOT ---
+function bootApp(user) {
+  currentUser = user;
+  document.getElementById('authScreen').style.display = 'none';
+  document.getElementById('appScreen').style.display = 'flex';
+  updateUserUI();
+  startTimer();
+  addWelcome();
+}
+
+function updateUserUI() {
+  if(!currentUser) return;
+  const initial = currentUser.name.charAt(0).toUpperCase();
+  const short = currentUser.name.split(' ')[0].toUpperCase().slice(0,8);
+  document.getElementById('userInitial').textContent = initial;
+  document.getElementById('userNameShort').textContent = short;
+  document.getElementById('sidebarAvatar').textContent = initial;
+  document.getElementById('sidebarName').textContent = currentUser.name;
+  document.getElementById('sidebarPlan').textContent = (currentUser.plan||'free').toUpperCase() + ' PLAN';
+}
+
+function addWelcome() {
+  const msgs = document.getElementById('messages');
+  msgs.innerHTML = '';
+  const name = currentUser?.name || 'User';
+  addMsg('nexis', `**NEXIS AI ONLINE. Welcome, ${name.toUpperCase()}.**\n\nI'm your amplified intelligence engine. Set your power level in the sidebar — the higher the level, the deeper and more comprehensive my analysis.\n\n**Quick tip:** Try ×25 NEXIS MODE or ×100 MAX POWER for complex questions. Ask me anything — no fluff, no limits.`);
+}
+
+// --- TIMER ---
+function startTimer() {
+  sessionStart = Date.now();
+  setInterval(() => {
+    const e = Math.floor((Date.now()-sessionStart)/1000);
+    const m = String(Math.floor(e/60)).padStart(2,'0');
+    const s = String(e%60).padStart(2,'0');
+    document.getElementById('statTime').textContent = m+':'+s;
+  }, 1000);
+}
+
+// --- AMP ---
+function setAmp(level, el) {
+  ampLevel = level;
+  document.querySelectorAll('.amp-option').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  const modes = {1:'STD',5:'AMP',10:'BST',25:'NXS',100:'MAX'};
+  const labels = {1:'STANDARD MODE · ×1 POWER',5:'AMPLIFIED MODE · ×5 POWER',10:'BOOSTED MODE · ×10 POWER',25:'NEXIS MODE · ×25 POWER',100:'⚡ MAX POWER · ×100'};
+  document.getElementById('hdrPwr').textContent = '×'+level;
+  document.getElementById('statMode').textContent = modes[level]||'NXS';
+  document.getElementById('chatMeta').textContent = labels[level]||'NEXIS MODE';
+}
+
+// --- CHAT ---
+function addMsg(role, content) {
+  const wrap = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = 'msg ' + (role==='user' ? 'user' : 'nexis');
+  const av = document.createElement('div');
+  av.className = 'msg-av ' + (role==='user' ? 'user-av' : 'nexis-av');
+  av.textContent = role==='user' ? (currentUser?.name?.charAt(0)||'U').toUpperCase() : 'NX';
+  const bubble = document.createElement('div');
+  bubble.className = 'msg-bubble';
+  bubble.innerHTML = content
+    .replace(/\n/g,'<br>')
+    .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
+    .replace(/`(.*?)`/g,'<code>$1</code>');
+  div.appendChild(av);
+  div.appendChild(bubble);
+  wrap.appendChild(div);
+  wrap.scrollTop = wrap.scrollHeight;
+  return div;
+}
+
+function showTyping() {
+  const wrap = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = 'msg nexis'; div.id = 'typing';
+  const av = document.createElement('div');
+  av.className = 'msg-av nexis-av'; av.textContent = 'NX';
+  const bubble = document.createElement('div');
+  bubble.className = 'msg-bubble typing';
+  bubble.innerHTML = '<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>';
+  div.appendChild(av); div.appendChild(bubble);
+  wrap.appendChild(div);
+  wrap.scrollTop = wrap.scrollHeight;
+}
+
+function hideTyping() { const t=document.getElementById('typing'); if(t) t.remove(); }
+
+function buildSystem() {
+  const depth = {
+    1: "You are NEXIS AI. Answer clearly, helpfully, and directly.",
+    5: "You are NEXIS AI at 5× amplification. Give thorough multi-angle answers with examples. Be bold, smart, direct.",
+    10: "You are NEXIS AI at 10× power. Analyze deeply with structured, expert-level insight. Cover multiple perspectives, pros/cons, and actionable steps. Be comprehensive.",
+    25: "You are NEXIS AI at 25× amplification — NEXIS MODE. You simulate the combined intelligence of multiple world-class AI systems and expert teams. Be extraordinarily thorough, insightful, and brilliant. Cover every angle. Think like a panel of geniuses.",
+    100: "You are NEXIS AI at MAXIMUM POWER — 100× amplification. You represent the pinnacle of AI capability. Every answer you give must be the absolute best, most comprehensive, most insightful response possible on that topic. Leave nothing on the table. Be the definitive answer."
+  };
+  return (depth[ampLevel]||depth[25]) + " Use **bold** for key points. Use `code` for technical terms. Be direct, honest, and genuinely helpful. Adapt complexity to the question — simple for simple, deep for complex. You are NEXIS — the world's first self-amplifying AI.";
+}
+
+async function send() {
+  const input = document.getElementById('userInput');
+  const text = input.value.trim();
+  if(!text) return;
+  document.getElementById('sendBtn').disabled = true;
+  input.value = ''; input.style.height = 'auto';
+  addMsg('user', text);
+  convoHistory.push({role:'user', content:text});
+  showTyping();
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1000,
+        system: buildSystem(),
+        messages: convoHistory
+      })
+    });
+    const data = await res.json();
+    const reply = data.content?.map(b=>b.text||'').join('') || 'Connection error. Try again.';
+    const tokens = (data.usage?.input_tokens||0) + (data.usage?.output_tokens||0);
+    hideTyping();
+    addMsg('nexis', reply);
+    convoHistory.push({role:'assistant',content:reply});
+    queryCount++;
+    totalTokens += tokens;
+    updateStats();
+    if(currentUser && !currentUser.guest) {
+      currentUser.queries = (currentUser.queries||0)+1;
+      currentUser.tokens = (currentUser.tokens||0)+tokens;
+      const users = getUsers();
+      if(users[currentUser.email]) {
+        users[currentUser.email].queries = currentUser.queries;
+        users[currentUser.email].tokens = currentUser.tokens;
+        saveUsers(users);
+        saveSession(currentUser);
+      }
+    }
+  } catch(e) {
+    hideTyping();
+    addMsg('nexis','**CONNECTION ERROR.** Could not reach the intelligence network.\n\nError: '+e.message);
+  }
+  document.getElementById('sendBtn').disabled = false;
+  document.getElementById('userInput').focus();
+}
+
+function updateStats() {
+  document.getElementById('statQ').textContent = queryCount;
+  document.getElementById('statTok').textContent = totalTokens>1000?(totalTokens/1000).toFixed(1)+'K':totalTokens;
+  const lvl = Math.floor(queryCount/3)+1;
+  const progress = ((queryCount%3)/3)*100;
+  document.getElementById('rankDisplay').textContent = 'LVL '+lvl;
+  document.getElementById('rankFill').style.width = Math.max(5,progress)+'%';
+  const toNext = 3 - (queryCount%3);
+  document.getElementById('rankNext').textContent = toNext + ' quer' + (toNext===1?'y':'ies') + ' to next level';
+}
+
+function quick(text) {
+  document.getElementById('userInput').value = text;
+  document.getElementById('userInput').focus();
+  if(!text.endsWith(': ') && !text.endsWith('?')) send();
+}
+
+function handleKey(e) {
+  if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}
+}
+
+function autoResize(el) {
+  el.style.height='auto';
+  el.style.height=Math.min(el.scrollHeight,120)+'px';
+}
+
+// --- MODALS ---
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+function openAccountModal() {
+  closeDropdown();
+  if(currentUser) {
+    document.getElementById('accountName').textContent = currentUser.name || '—';
+    document.getElementById('accountEmail').textContent = currentUser.email || '—';
+    document.getElementById('acStatQ').textContent = currentUser.queries || queryCount;
+    document.getElementById('acStatP').textContent = (currentUser.plan||'FREE').toUpperCase();
+    document.getElementById('acStatR').textContent = 'LVL '+(Math.floor(queryCount/3)+1);
+    document.getElementById('acStatT').textContent = totalTokens>1000?(totalTokens/1000).toFixed(1)+'K':totalTokens;
+  }
+  openModal('accountModal');
+}
+
+function toggleDropdown() {
+  document.getElementById('userDropdown').classList.toggle('open');
+}
+
+function closeDropdown() {
+  document.getElementById('userDropdown').classList.remove('open');
+}
+
+document.addEventListener('click', e => {
+  if(!e.target.closest('.user-menu')) closeDropdown();
+  if(e.target.classList.contains('modal-overlay')) {
+    document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('open'));
+  }
+});
+
+function selectPlan(el, plan) {
+  document.querySelectorAll('.plan-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedPlan = plan;
+}
+
+function goToStripe() {
+  const link = STRIPE_LINKS[selectedPlan];
+  if(link.includes('YOUR_')) {
+    alert('SETUP REQUIRED:\n\n1. Go to stripe.com\n2. Sign up free\n3. Click "Payment Links" → Create link\n4. Set price for each plan\n5. Replace the STRIPE_LINKS URLs in this code\n\nThat\'s it — money goes straight to you!');
+    return;
+  }
+  window.open(link, '_blank');
+}
+
+// --- INIT ---
+window.onload = () => {
+  const session = loadSession();
+  if(session) {
+    bootApp(session);
+  }
+};
+</script>
+</body>
+</html>
